@@ -117,9 +117,7 @@ class D1ViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val results = d1Repo.query(accountId, db.uuid, sql)
                 val rows = results.firstOrNull()?.results ?: emptyList()
-                _detailState.update {
-                    it.copy(executing = false, lastResult = rows, rowCount = rows.size, lastError = null)
-                }
+                _detailState.update { it.copy(executing = false, lastResult = rows, rowCount = rows.size, lastError = null) }
                 ToastBus.show(rows.size.toString() + " fila(s)", ToastType.Success)
             } catch (e: Exception) {
                 val msg = e.message ?: "Error ejecutando SQL"

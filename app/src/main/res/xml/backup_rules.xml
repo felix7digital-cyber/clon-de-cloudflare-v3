@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <exclude domain="sharedpref" path="cf_secure_prefs.xml"/>
+    <exclude domain="sharedpref" path="cf_fallback_prefs.xml"/>
+    <include domain="sharedpref" path="."/>
+    <include domain="file" path="datastore"/>
+</full-backup-content>

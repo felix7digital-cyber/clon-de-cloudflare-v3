@@ -47,14 +47,10 @@ import com.cfadmin.pro.ui.components.SectionHeader
 import com.cfadmin.pro.ui.components.ToastBus
 import com.cfadmin.pro.ui.components.ToastType
 import com.cfadmin.pro.ui.theme.CfCyan
-import com.cfadmin.pro.ui.theme.CfOrange
 import com.cfadmin.pro.ui.theme.CfRed
 
 @Composable
-fun D1ListScreen(
-    onOpenDatabase: (String) -> Unit,
-    vm: D1ViewModel = viewModel()
-) {
+fun D1ListScreen(onOpenDatabase: (String) -> Unit, vm: D1ViewModel = viewModel()) {
     val state by vm.listState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -64,10 +60,7 @@ fun D1ListScreen(
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         CfCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionHeader(
-                    "D1 Databases",
-                    state.databases.size.toString() + " base(s) disponibles"
-                )
+                SectionHeader("D1 Databases", state.databases.size.toString() + " base(s) disponibles")
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = { vm.refreshList() }) {
                     Icon(Icons.Default.Refresh, contentDescription = "Refrescar")
@@ -77,17 +70,8 @@ fun D1ListScreen(
 
         if (state.error != null) {
             Spacer(Modifier.height(12.dp))
-            Surface(
-                color = CfRed.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    state.error ?: "",
-                    color = CfRed,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(12.dp)
-                )
+            Surface(color = CfRed.copy(alpha = 0.1f), shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()) {
+                Text(state.error ?: "", color = CfRed, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(12.dp))
             }
         }
 
@@ -100,15 +84,12 @@ fun D1ListScreen(
                 }
             }
             state.databases.isEmpty() -> {
-                EmptyState("No tienes bases D1. Créalas desde la pantalla de Pages o en dash.cloudflare.com.")
+                EmptyState("No tienes bases D1. Crealas desde la pantalla de Pages o en dash.cloudflare.com.")
             }
             else -> {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(state.databases, key = { it.uuid }) { db ->
-                        D1DatabaseCard(
-                            database = db,
-                            onOpen = { onOpenDatabase(db.uuid) }
-                        )
+                        D1DatabaseCard(database = db, onOpen = { onOpenDatabase(db.uuid) })
                     }
                 }
             }
@@ -134,35 +115,18 @@ private fun D1DatabaseCard(database: D1Database, onOpen: () -> Unit) {
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(database.name, style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        database.uuid,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = FontFamily.Monospace
-                    )
+                    Text(database.uuid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = FontFamily.Monospace)
                 }
-                IconButton(
-                    onClick = { copyToClipboard(context, "UUID", database.uuid) },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        Icons.Default.ContentCopy,
-                        contentDescription = "Copiar UUID",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
+                IconButton(onClick = { copyToClipboard(context, "UUID", database.uuid) }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = "Copiar UUID", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                 }
             }
-
             Spacer(Modifier.height(10.dp))
-
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 database.numTables?.let { Chip("tablas: " + it) }
                 database.fileSize?.let { Chip("size: " + humanSize(it)) }
                 database.version?.takeIf { it.isNotBlank() }?.let { Chip("v: " + it.take(10)) }
-                if (database.createdAt.isNotBlank()) {
-                    Chip("creado: " + database.createdAt.take(10))
-                }
+                if (database.createdAt.isNotBlank()) Chip("creado: " + database.createdAt.take(10))
             }
         }
     }

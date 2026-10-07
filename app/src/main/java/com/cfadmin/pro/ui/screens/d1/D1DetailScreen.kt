@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -65,13 +64,12 @@ import com.cfadmin.pro.ui.components.CfCard
 import com.cfadmin.pro.ui.components.Chip
 import com.cfadmin.pro.ui.components.ToastBus
 import com.cfadmin.pro.ui.components.ToastType
-import com.cfadmin.pro.ui.theme.CfAmber
 import com.cfadmin.pro.ui.theme.CfCyan
 import com.cfadmin.pro.ui.theme.CfEmerald
 import com.cfadmin.pro.ui.theme.CfOrange
 import com.cfadmin.pro.ui.theme.CfPurple
 import com.cfadmin.pro.ui.theme.CfRed
-import com.cfadmin.pro.ui.theme.CfYellow
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -123,27 +121,17 @@ fun D1DetailScreen(
                 }
                 state.database != null -> {
                     val db = state.database!!
-
                     Column(
-                        Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // ---------- INFO ----------
                         CfCard {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Badge("D1", CfCyan)
                                 Spacer(Modifier.width(10.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(db.name, style = MaterialTheme.typography.titleMedium)
-                                    Text(
-                                        db.uuid,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontFamily = FontFamily.Monospace
-                                    )
+                                    Text(db.uuid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = FontFamily.Monospace)
                                 }
                             }
                             Spacer(Modifier.height(10.dp))
@@ -154,9 +142,7 @@ fun D1DetailScreen(
                             }
                             Spacer(Modifier.height(10.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                SmallAction("Copiar UUID") {
-                                    copyToClipboard(context, "UUID", db.uuid)
-                                }
+                                SmallAction("Copiar UUID") { copyToClipboard(context, "UUID", db.uuid) }
                                 SmallAction("Copiar link API") {
                                     val acc = vm.accountIdOrNull() ?: "<account>"
                                     val link = "https://api.cloudflare.com/client/v4/accounts/" + acc + "/d1/database/" + db.uuid
@@ -165,111 +151,64 @@ fun D1DetailScreen(
                             }
                         }
 
-                        // ---------- TABLAS ----------
                         CfCard {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Tablas", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                                if (state.loadingTables) {
-                                    CircularProgressIndicator(
-                                        strokeWidth = 2.dp,
-                                        modifier = Modifier.size(16.dp),
-                                        color = CfCyan
-                                    )
-                                }
+                                if (state.loadingTables) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp), color = CfCyan)
                             }
                             Spacer(Modifier.height(8.dp))
                             if (state.tables.isEmpty()) {
-                                Text(
-                                    if (state.loadingTables) "Cargando tablas…" else "Sin tablas",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Text(if (state.loadingTables) "Cargando tablas…" else "Sin tablas", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             } else {
-                                Column(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(max = 240.dp)
-                                        .verticalScroll(rememberScrollState())
-                                ) {
+                                Column(Modifier.fillMaxWidth().heightIn(max = 240.dp).verticalScroll(rememberScrollState())) {
                                     state.tables.forEach { t ->
                                         Row(
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .clickable { vm.previewTable(t) }
-                                                .padding(vertical = 6.dp),
+                                            Modifier.fillMaxWidth().clickable { vm.previewTable(t) }.padding(vertical = 6.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Chip("SELECT *")
                                             Spacer(Modifier.width(10.dp))
-                                            Text(
-                                                t,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontFamily = FontFamily.Monospace
-                                            )
+                                            Text(t, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
                                         }
                                     }
                                 }
                             }
                         }
 
-                        // ---------- SQL EDITOR ----------
                         CfCard {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("SQL", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                                Chip("⌘ Tab = editor")
-                            }
+                            Text("SQL", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = state.sqlInput,
                                 onValueChange = vm::onSqlChange,
                                 placeholder = { Text("SELECT * FROM mi_tabla LIMIT 50;") },
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 13.sp
-                                ),
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
                                 enabled = !state.executing,
                                 minLines = 4,
                                 maxLines = 12,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(Modifier.height(10.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = { vm.executeSql() },
-                                    enabled = !state.executing && state.sqlInput.isNotBlank(),
-                                    colors = ButtonDefaults.buttonColors(containerColor = CfCyan)
-                                ) {
-                                    if (state.executing) {
-                                        CircularProgressIndicator(
-                                            strokeWidth = 2.dp,
-                                            modifier = Modifier.size(16.dp),
-                                            color = Color.White
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Ejecutando…")
-                                    } else {
-                                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(6.dp))
-                                        Text("Ejecutar")
-                                    }
+                            Button(
+                                onClick = { vm.executeSql() },
+                                enabled = !state.executing && state.sqlInput.isNotBlank(),
+                                colors = ButtonDefaults.buttonColors(containerColor = CfCyan)
+                            ) {
+                                if (state.executing) {
+                                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp), color = Color.White)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Ejecutando…")
+                                } else {
+                                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Ejecutar")
                                 }
                             }
                         }
 
-                        // ---------- ERROR / RESULTADOS ----------
                         if (state.lastError != null) {
-                            Surface(
-                                color = CfRed.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    state.lastError ?: "",
-                                    color = CfRed,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace,
-                                    modifier = Modifier.padding(12.dp)
-                                )
+                            Surface(color = CfRed.copy(alpha = 0.1f), shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()) {
+                                Text(state.lastError ?: "", color = CfRed, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, modifier = Modifier.padding(12.dp))
                             }
                         }
 
@@ -278,44 +217,26 @@ fun D1DetailScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Badge("Resultado", CfEmerald)
                                     Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        state.rowCount.toString() + " fila(s)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Text(state.rowCount.toString() + " fila(s)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Spacer(Modifier.height(10.dp))
                                 ResultsTable(state.lastResult)
                             }
                         }
 
-                        // ---------- BINDINGS ----------
                         CfCard {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Usada en", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                                if (state.loadingBindings) {
-                                    CircularProgressIndicator(
-                                        strokeWidth = 2.dp,
-                                        modifier = Modifier.size(16.dp),
-                                        color = CfPurple
-                                    )
-                                }
+                                if (state.loadingBindings) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp), color = CfPurple)
                             }
                             Spacer(Modifier.height(8.dp))
                             if (state.loadingBindings) {
                                 Text("Buscando bindings…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             } else if (state.bindingsProjects.isEmpty()) {
-                                Text(
-                                    "Ningún proyecto Pages usa esta base",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Text("Ningun proyecto Pages usa esta base", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             } else {
                                 state.bindingsProjects.forEach { name ->
-                                    Row(
-                                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Badge("Pages", CfOrange)
                                         Spacer(Modifier.width(8.dp))
                                         Text(name, style = MaterialTheme.typography.bodyMedium)
@@ -324,15 +245,10 @@ fun D1DetailScreen(
                             }
                         }
 
-                        // ---------- ZONA DE PELIGRO ----------
                         CfCard {
                             Text("Zona de peligro", style = MaterialTheme.typography.titleMedium, color = CfRed)
                             Spacer(Modifier.height(6.dp))
-                            Text(
-                                "Eliminar la base de datos no se puede deshacer. Si está vinculada a un proyecto Pages, primero desvincula.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Text("Eliminar la base de datos no se puede deshacer.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(10.dp))
                             Button(
                                 onClick = { confirmDelete = true },
@@ -360,100 +276,50 @@ fun D1DetailScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Eliminar base de datos") },
-            text = { Text("¿Eliminar '" + (state.database?.name ?: "") + "'? Esta acción no se puede deshacer.") },
+            text = { Text("Eliminar '" + (state.database?.name ?: "") + "'? Esta accion no se puede deshacer.") },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    vm.deleteDatabase { ok -> if (ok) onDeleted() }
-                }) { Text("Eliminar", color = CfRed) }
+                TextButton(onClick = { confirmDelete = false; vm.deleteDatabase { ok -> if (ok) onDeleted() } }) { Text("Eliminar", color = CfRed) }
             },
-            dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") }
-            }
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } }
         )
     }
 }
 
-// ----------------------------------------------------------------------
-//  Componentes auxiliares
-// ----------------------------------------------------------------------
-
 @Composable
 private fun SmallAction(label: String, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Row(
-            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.ContentCopy,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(14.dp)
-            )
+    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.clickable { onClick() }) {
+        Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(6.dp))
             Text(label, style = MaterialTheme.typography.labelSmall)
         }
     }
 }
 
-/**
- * Tabla de resultados. Columnas = unión de todas las keys de las filas.
- * Celdas = valor formateado (string plano sin comillas, "null" si es JsonNull).
- */
 @Composable
 private fun ResultsTable(rows: List<JsonObject>) {
     if (rows.isEmpty()) {
         Text("Sin filas", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
-
-    // Unión ordenada de keys
     val columns = linkedSetOf<String>()
     rows.forEach { obj -> obj.keys.forEach { columns.add(it) } }
     val colList = columns.toList()
-
     val hScroll = rememberScrollState()
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .horizontalScroll(hScroll)
-    ) {
-        // Header
+    Column(Modifier.fillMaxWidth().horizontalScroll(hScroll)) {
         Row(Modifier.background(CfCyan.copy(alpha = 0.12f))) {
             colList.forEach { col ->
-                Text(
-                    col,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    fontFamily = FontFamily.Monospace,
-                    color = CfCyan,
-                    modifier = Modifier
-                        .width(140.dp)
-                        .padding(horizontal = 8.dp, vertical = 8.dp)
-                )
+                Text(col, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), fontFamily = FontFamily.Monospace, color = CfCyan, modifier = Modifier.width(140.dp).padding(horizontal = 8.dp, vertical = 8.dp))
             }
         }
         HorizontalDivider(color = CfCyan.copy(alpha = 0.3f))
-
-        // Filas
         rows.forEachIndexed { i, row ->
             val bg = if (i % 2 == 0) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             Row(Modifier.background(bg)) {
                 colList.forEach { col ->
                     val cell = row[col]?.let { valueToString(it) } ?: "—"
-                    Text(
-                        cell,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier
-                            .width(140.dp)
-                            .padding(horizontal = 8.dp, vertical = 6.dp)
-                    )
+                    Text(cell, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, modifier = Modifier.width(140.dp).padding(horizontal = 8.dp, vertical = 6.dp))
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
@@ -461,11 +327,9 @@ private fun ResultsTable(rows: List<JsonObject>) {
     }
 }
 
-private fun valueToString(el: kotlinx.serialization.json.JsonElement): String {
+private fun valueToString(el: JsonElement): String {
     return when (el) {
-        is JsonPrimitive -> {
-            if (el.isString) el.content else el.content
-        }
+        is JsonPrimitive -> el.content
         else -> el.toString()
     }
 }
